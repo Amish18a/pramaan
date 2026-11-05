@@ -11,5 +11,6 @@ def load_isot():
     real["label"] = 0
     df = pd.concat([fake,real],ignore_index=True)
 
+    df["date_raw"] = df["date"]
     df["date"] = pd.to_datetime(df["date"],errors="coerce")
     return df
