@@ -222,3 +222,6 @@ __marimo__/
 data/
 *.csv
 .env
+
+.venv/
+.ipynb_checkpoints/
