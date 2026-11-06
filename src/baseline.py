@@ -56,3 +56,27 @@ def f1_over_seeds(df, model="lr", seeds=(0, 1, 2, 3, 4)):
         scores.append(f1_score(y_te, clf.predict(vec.transform(X_te)), average="macro"))
     print(round(np.mean(scores), 4), "+/-", round(np.std(scores), 4))
     return scores
+
+def run_cross(isot_df, ext_df, model="lr"):
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        isot_df["text"], isot_df["label"], test_size=0.2,
+        stratify=isot_df["label"], random_state=SEED)
+    vec = TfidfVectorizer(ngram_range=(1, 2), min_df=3,
+                          max_features=50000, sublinear_tf=True)
+    clf = make_model(model).fit(vec.fit_transform(X_tr), y_tr)
+    for name, X, y in [("ISOT test (in-domain)", X_te, y_te),
+                       ("WELFake external", ext_df["text"], ext_df["label"])]:
+        pred = clf.predict(vec.transform(X))
+        print("===", name, "===")
+        print("macro-F1:", round(f1_score(y, pred, average="macro"), 4))
+        print(classification_report(y, pred, target_names=["real", "fake"]))
+        print(confusion_matrix(y, pred))
+
+def fit_isot(isot_df, model="lr", seed=SEED):
+    X_tr, _, y_tr, _ = train_test_split(
+        isot_df["text"], isot_df["label"], test_size=0.2,
+        stratify=isot_df["label"], random_state=seed)
+    vec = TfidfVectorizer(ngram_range=(1, 2), min_df=3,
+                          max_features=50000, sublinear_tf=True)
+    clf = make_model(model).fit(vec.fit_transform(X_tr), y_tr)
+    return vec, clf

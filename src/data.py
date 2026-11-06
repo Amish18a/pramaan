@@ -14,3 +14,14 @@ def load_isot():
     df["date_raw"] = df["date"]
     df["date"] = pd.to_datetime(df["date_raw"].str.strip(), format="mixed", errors="coerce")
     return df
+
+WELFAKE = ROOT / "data" / "raw" / "welfake" / "WELFake_Dataset.csv"
+
+def load_welfake():
+    df = pd.read_csv(WELFAKE)
+    # drop the unnamed serial-number column if present
+    df = df.drop(columns=[c for c in df.columns if str(c).startswith("Unnamed")])
+    df = df.rename(columns={"label": "label_raw"})   # NOT mapped yet
+    df["title"] = df["title"].fillna("")
+    df["text"] = df["text"].fillna("")
+    return df

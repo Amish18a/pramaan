@@ -33,3 +33,14 @@ def clean_extra(df, groups=None):
             df["text"] = df["text"].str.replace(pat, " ", regex=True)
     df["text"] = df["text"].str.replace(r"\s+", " ", regex=True).str.strip()
     return df
+
+def clean_generic(df, min_words=10):
+    df = df.copy()
+    df["words"] = df["text"].str.split().str.len()
+    df = df[df["words"] >= min_words]
+    df = df.drop_duplicates(subset=["title", "text"])
+    df["text"] = df["text"].str.replace(r"^[^()]{0,60}\(Reuters\)\s*-?\s*", "", regex=True)
+    df["text"] = df["text"].str.replace("(Reuters)", " ", regex=False)
+    df["text"] = df["text"].str.replace(r"[\"'‘’“”`]", " ", regex=True)
+    df["text"] = df["text"].str.replace(r"\s+", " ", regex=True).str.strip()
+    return df.reset_index(drop=True)
