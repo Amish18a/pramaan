@@ -12,5 +12,5 @@ def load_isot():
     df = pd.concat([fake,real],ignore_index=True)
 
     df["date_raw"] = df["date"]
-    df["date"] = pd.to_datetime(df["date"],errors="coerce")
+    df["date"] = pd.to_datetime(df["date_raw"].str.strip(), format="mixed", errors="coerce")
     return df
