@@ -3,20 +3,34 @@ Evidence-first fake news verification. Not just "real or fake": which claims,
 what evidence, and how confident.
 
 ## Status
-Milestone 1 in progress: data audit and cleaning done, baseline classifiers next.
-No model results yet.
+Milestone 1 complete: leakage audit, baseline classifiers and a
+cross-dataset test. Next: Milestone 2 (evidence-based verification).
 
 ## Why
 A classifier alone can't establish truth. It can learn writing style or
 publisher artifacts. This project tests how well simple models generalize
 and builds toward evidence-based verification.
 
-## Findings so far (data audit)
-In the ISOT dataset the label is almost the same thing as the publisher
-(Reuters vs. websites flagged as unreliable), so many shortcuts separate the
-classes:
+## Key results (Milestone 1)
+Full details, caveats and what we cannot conclude: see `FINDINGS.md`.
 
-| Check | Real | Fake |
+- In the ISOT dataset the label is almost the same thing as the publisher
+  (Reuters vs. websites flagged as unreliable). A one-word rule ("no
+  (Reuters) tag means fake") reaches macro-F1 0.996 on raw ISOT with no
+  machine learning.
+- After removing the shortcuts we could identify, a TF-IDF + Logistic
+  Regression model still scores macro-F1 0.984 on held-out ISOT articles
+  (mean over 5 seeds: raw 0.9915, cleaned 0.9849, cleaned + extra 0.9843).
+- On 22,779 WELFake articles that do not overlap ISOT, the same model scores
+  about 0.57 macro-F1 (Linear SVM: 0.57). Accuracy (58%) is about the same
+  as always predicting "real" (58.4%), and 63% of real articles are labelled
+  fake. ROC AUC is 0.72 to 0.75, so some signal transfers but the decision
+  threshold does not.
+- About 59% of WELFake overlapped ISOT, so only non-overlapping rows are used.
+- The cause of the drop is not isolated: publisher style, topic, time and
+  label quality all differ between the datasets.
+
+| Check (ISOT) | Real | Fake |
 |---|---|---|
 | Text contains "(Reuters)" | 99.2% | 0.04% |
 | Text contains curly quotes | 50.5% | 0.0% |
@@ -24,32 +38,17 @@ classes:
 | Exact duplicate rows | 220 | 5,573 |
 | `subject` values | politicsNews, worldnews | six other values, no overlap |
 
-- A one-word rule ("no (Reuters) tag means fake") reaches macro-F1 0.996 on
-  the raw dataset, with no machine learning. A high score on raw ISOT
-  therefore does not show that a model understands truthfulness.
-- Real articles use one date format, fake articles use several, so date
-  formatting is another possible shortcut. Dates are not used as features.
-- Cleaning removes the known shortcuts: 44,898 -> 38,494 rows
-  (real 21,196, fake 17,298). See `EVAL.md` for the exact steps.
-- Baseline results (TF-IDF + Logistic Regression, random 80/20 split,
-  macro-F1, mean ± std over 5 seeds): raw 0.9915 ± 0.0004,
-  cleaned 0.9849 ± 0.0013, cleaned + extra patterns 0.9843 ± 0.0008.
-- Removing the shortcuts we could identify lowered the score by less than
-  one point. The classifier still separates the two sources at about 98.5%,
-  mainly using reporting conventions and web boilerplate, not claims.
-  Next: test on a second dataset with different publishers.
-
 ## Milestone 1 plan
 - [x] Data loading and audit
 - [x] Cleaning pipeline for known shortcuts
 - [x] Evaluation protocol (`EVAL.md`)
-- [ ] Baselines on raw vs. cleaned text (TF-IDF + Logistic Regression / Linear SVM)
-- [ ] Top-feature inspection and further cleaning
-- [ ] Second dataset and cross-dataset test
-- [ ] Findings write-up
+- [x] Baselines on raw vs. cleaned text (TF-IDF + Logistic Regression / Linear SVM)
+- [x] Top-feature inspection and further cleaning
+- [x] Second dataset and cross-dataset test
+- [x] Findings write-up (`FINDINGS.md`)
 
 ## Roadmap
-- [ ] Baseline + leakage audit + cross-dataset test
+- [x] Baseline + leakage audit + cross-dataset test
 - [ ] Transformer comparison
 - [ ] Claim extraction + evidence retrieval + verdict
 - [ ] Streamlit demo
@@ -58,18 +57,21 @@ classes:
 ```
 pramaan/
   README.md
-  EVAL.md          evaluation protocol
+  FINDINGS.md      Milestone 1 results and limitations
+  EVAL.md          evaluation protocol, results, deviations
   DATA.md          dataset sources and licenses
   requirements.txt
-  notebooks/       01_data_audit.ipynb
-  src/             data.py (loading), clean.py (cleaning)
+  notebooks/       01_data_audit, 02_baseline, 03_welfake_audit, 04_cross_dataset
+  src/             data.py, clean.py, overlap.py, baseline.py
   data/            not committed
 ```
 
 ## Data
 The data is not included in this repository. See `DATA.md` for the source,
-format and license of each dataset. Place `Fake.csv` and `True.csv` in
-`data/raw/isot/`.
+format and license of each dataset. Place the files here (lowercase folder
+names, so it also works on case-sensitive systems):
+- `data/raw/isot/Fake.csv` and `data/raw/isot/True.csv`
+- `data/raw/welfake/WELFake_Dataset.csv`
 
 ## Reproduce
 ```
@@ -78,10 +80,11 @@ python -m venv .venv
 pip install -r requirements.txt
 jupyter notebook
 ```
-Then open `notebooks/01_data_audit.ipynb`.
+Run the notebooks in order, 01 to 04.
 
 ## Limitations
 - ISOT labels describe the source of an article, not whether each claim in
   it is true. Results on ISOT say nothing about fact-checking individual claims.
-- Cleaning removes only the shortcuts found so far. Others may remain.
-
+- WELFake merges other datasets and its label quality was not audited.
+- One dataset pair, linear models only. Cleaning removes only the shortcuts
+  found so far.
